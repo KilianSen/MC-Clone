@@ -1,0 +1,16 @@
+{
+  "name": "SAMPLE",
+  "nonsolid": false,
+  "texture_position_front": [
+    15,
+    0
+  ],
+  "texture_position_side": [
+    15,
+    0
+  ],
+  "texture_position_bottom": [
+    15,
+    0
+  ]
+}

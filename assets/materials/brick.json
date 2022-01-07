@@ -1,0 +1,16 @@
+{
+  "name": "brick",
+  "nonsolid": false,
+  "texture_position_front": [
+    6,
+    15
+  ],
+  "texture_position_side": [
+    6,
+    15
+  ],
+  "texture_position_bottom": [
+    6,
+    15
+  ]
+}

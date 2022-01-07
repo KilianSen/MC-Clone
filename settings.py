@@ -1,9 +1,9 @@
 import math
-from ppi.pySingleton import Singleton
+
+from ppi.pySingleton import Singleton  # Privte Package
 
 
 class GameSettings(Singleton):
-
     TICKS_PER_SEC = 90
 
     WALKING_SPEED = 5

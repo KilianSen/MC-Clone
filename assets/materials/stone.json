@@ -1,0 +1,16 @@
+{
+  "name": "stone",
+  "nonsolid": false,
+  "texture_position_front": [
+    0,
+    14
+  ],
+  "texture_position_side": [
+    0,
+    14
+  ],
+  "texture_position_bottom": [
+    0,
+    14
+  ]
+}

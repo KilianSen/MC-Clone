@@ -1,0 +1,16 @@
+{
+  "name": "sand",
+  "nonsolid": false,
+  "texture_position_front": [
+    2,
+    14
+  ],
+  "texture_position_side": [
+    2,
+    14
+  ],
+  "texture_position_bottom": [
+    3,
+    14
+  ]
+}

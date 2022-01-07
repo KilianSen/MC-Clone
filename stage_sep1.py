@@ -1,5 +1,15 @@
 from settings import GameSettings
 
+FACES = [
+    (0, 1, 0),
+    (0, -1, 0),
+    (-1, 0, 0),
+    (1, 0, 0),
+    (0, 0, 1),
+    (0, 0, -1),
+]
+
+
 # Size of sectors used to ease block loading.
 
 def cube_vertices(x, y, z, n):
@@ -16,28 +26,7 @@ def cube_vertices(x, y, z, n):
     ]
 
 
-def tex_coords(top, bottom, side):
-    """ Return a list of the texture squares for the top, bottom and side.
 
-    """
-
-    def tex_coord(x, y, n=16):
-        """ Return the bounding vertices of the texture square.
-
-        """
-        m = 1.0 / n
-        dx = x * m
-        dy = y * m
-        return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
-
-    top = tex_coord(*top)
-    bottom = tex_coord(*bottom)
-    side = tex_coord(*side)
-    result = []
-    result.extend(top)
-    result.extend(bottom)
-    result.extend(side * 4)
-    return result
 
 
 def normalize(position):
