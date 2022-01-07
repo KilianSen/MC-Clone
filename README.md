@@ -18,3 +18,9 @@ Changes to the original (work in progress):
 + ( join official mc servers )
 
 Why? This is planned as a playground to train future AI projects.
+
+# What do I need to run it?
+
++ You need to download the texture atlas from Minecraft Indev (february 2010)
++ Pyglet
++ Python 3.10
