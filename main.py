@@ -6,6 +6,7 @@ from pyglet.gl import *
 from pyglet.window import key, mouse
 
 import materials
+import ui.inventory
 from stage_sep1 import *
 from world import Model
 
@@ -55,10 +56,11 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = []
+        self.inventory = ui.inventory.IntelligentInventory()
+        self.hotbar = ui.inventory.Hotbar(9, self.inventory)
 
         # The current block the user can place. Hit num keys to cycle.
-        self.block = self.inventory[0]
+        self.block = self.hotbar.selected_item
 
         # Convenience list of num keys.
         self.num_keys = [
@@ -263,7 +265,7 @@ class Window(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
-                    self.model.add_block(previous, self.block)
+                    self.model.add_block(previous, self.hotbar.selected_item)
             elif button == pyglet.window.mouse.LEFT and block:
                 self.model.remove_block(block)
         else:

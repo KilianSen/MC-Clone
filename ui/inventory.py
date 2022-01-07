@@ -1,10 +1,28 @@
-from ppi.pySingleton import Singleton
+class Singleton(object):
+    """Use to create a singleton"""
+
+    def __new__(cls, *args, **kwds):
+        """
+        >>> s = Singleton()
+        >>> p = Singleton()
+        >>> id(s) == id(p)
+        True
+        """
+        self = "__self__"
+        if not hasattr(cls, self):
+            instance = object.__new__(cls)
+            instance.init(*args, **kwds)
+            setattr(cls, self, instance)
+        return getattr(cls, self)
+
+    def init(self, *args, **kwds):
+        pass
 
 
 class IntelligentInventory(Singleton):
     _slots: []
 
-    def __init__(self, size: int = 9 * 4, max_window_percentages: (float, float) = (.5, .5)):
+    def init(self, size: int = 9 * 4, max_window_percentages: (float, float) = (.5, .5)):
         self._slots = []
 
         self.reszize(size)
@@ -97,12 +115,25 @@ class IntelligentInventory(Singleton):
                 raise Exception(f'Not enough items of type {item_to_remove}, missing {amount} items')
 
 
-class Hotbar:
+class Hotbar(Singleton):
     selector: int
     size: int
     inventory: IntelligentInventory
 
-    def __init__(self, size: int = 9, inventory: IntelligentInventory = IntelligentInventory()):
+    def init(self, size: int = 9, inventory: IntelligentInventory = IntelligentInventory()):
         self.inner_inventory = inventory
         self.size = size
         self.selector = 0
+
+    @property
+    def items(self):
+        return list(self.inner_inventory.items)[0:self.size - 1]
+
+    @property
+    def selected_item(self):
+        return self.inner_inventory.get_item(self.selector)
+
+    def use_selected_item(self):
+        item = self.selected_item
+        self.inner_inventory.remove_item(self.selector, 1)
+        return item

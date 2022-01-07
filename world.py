@@ -44,7 +44,7 @@ class Model(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        map_gen.GenMap(self.add_block)
+        map_gen.GenMap(self.add_block, self.MaterialLoader.material)
 
     def hit_test(self, position, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
