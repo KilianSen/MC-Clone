@@ -4,7 +4,7 @@ from ppi.pySingleton import Singleton
 
 class GameSettings(Singleton):
 
-    TICKS_PER_SEC = 60
+    TICKS_PER_SEC = 90
 
     WALKING_SPEED = 5
     RUNNING_SPEED = 10
@@ -17,3 +17,6 @@ class GameSettings(Singleton):
     TERMINAL_VELOCITY = 50
 
     PLAYER_HEIGHT = 2
+
+    SECTOR_SIZE = 16
+

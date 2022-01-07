@@ -1,7 +1,6 @@
 from __future__ import division
 
 import math
-import random
 import time
 
 from collections import deque
@@ -10,7 +9,8 @@ from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
 
-from settings import GameSettings
+import map_gen
+
 from stage_sep1 import *
 from materials import *
 
@@ -22,7 +22,6 @@ FACES = [
     (0, 0, 1),
     (0, 0, -1),
 ]
-
 
 class Model(object):
 
@@ -42,7 +41,7 @@ class Model(object):
         self.shown = {}
 
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self.shown = {}
+        self.shown_blocks = {}
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -57,38 +56,7 @@ class Model(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        n = 80  # 1/2 width and height of world
-        s = 1  # step size
-        y = 0  # initial y height
-        for x in range(-n, n + 1, s):
-            for z in range(-n, n + 1, s):
-                # create a layer stone a grass everywhere.
-                self.add_block((x, y - 2, z), GRASS, immediate=False)
-                self.add_block((x, y - 3, z), STONE, immediate=False)
-                if x in (-n, n) or z in (-n, n):
-                    # create outer walls.
-                    for dy in range(-2, 3):
-                        self.add_block((x, y + dy, z), STONE, immediate=False)
-
-        # generate the hills randomly
-        o = n - 10
-        for _ in range(120):
-            a = random.randint(-o, o)  # x position of the hill
-            b = random.randint(-o, o)  # z position of the hill
-            c = -1  # base of the hill
-            h = random.randint(1, 6)  # height of the hill
-            s = random.randint(4, 8)  # 2 * s is the side length of the hill
-            d = 1  # how quickly to taper off the hills
-            t = random.choice([GRASS, SAND, BRICK])
-            for y in range(c, c + h):
-                for x in range(a - s, a + s + 1):
-                    for z in range(b - s, b + s + 1):
-                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
-                            continue
-                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
-                            continue
-                        self.add_block((x, y, z), t, immediate=False)
-                s -= d  # decrement side length so hills taper off
+        map_gen.GenMap(self.add_block)
 
     def hit_test(self, position, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -223,10 +191,11 @@ class Model(object):
         vertex_data = cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         # create vertex list
+
         # FIXME Maybe `add_indexed()` should be used instead
-        self.shown[position] = self.batch.add(24, GL_QUADS, self.group,
-                                              ('v3f/static', vertex_data),
-                                              ('t2f/static', texture_data))
+        self.shown_blocks[position] = self.batch.add(24, GL_QUADS, self.group,
+                                                     ('v3f/static', vertex_data),
+                                                     ('t2f/static', texture_data))
 
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
@@ -248,9 +217,10 @@ class Model(object):
 
     def _hide_block(self, position):
         """ Private implementation of the 'hide_block()` method.
-
         """
-        self.shown.pop(position).delete()
+
+        self.shown_blocks.pop(position).delete()
+
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -582,9 +552,7 @@ class Window(pyglet.window.Window):
                 if previous:
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
-                texture = self.model.world[block]
-                if texture != STONE:
-                    self.model.remove_block(block)
+                self.model.remove_block(block)
         else:
             self.set_exclusive_mouse(True)
 
@@ -662,6 +630,8 @@ class Window(pyglet.window.Window):
             self.strafe[1] += 1
         elif symbol == key.D:
             self.strafe[1] -= 1
+        elif symbol == key.LSHIFT:
+            self.run = False
 
     def on_resize(self, width, height):
         """ Called when the window is resized to a new `width` and `height`.
@@ -746,7 +716,7 @@ class Window(pyglet.window.Window):
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z,
-            len(self.model.shown), len(self.model.world))
+            len(self.model.shown_blocks), len(self.model.world))
         self.label.draw()
 
     def draw_reticle(self):
@@ -777,21 +747,21 @@ def setup():
     # Configure the OpenGL fog properties.
     # Enable fog. Fog "blends a fog color with each rasterized pixel fragment's
     # post-texturing color."
-    glEnable(GL_FOG)
-    # Set the fog color.
-    glFogfv(GL_FOG_COLOR, (GLfloat * 4)(0.5, 0.69, 1.0, 1))
-    # Say we have no preference between rendering speed and quality.
-    glHint(GL_FOG_HINT, GL_DONT_CARE)
-    # Specify the equation used to compute the blending factor.
-    glFogi(GL_FOG_MODE, GL_LINEAR)
-    # How close and far away fog starts and ends. The closer the start and end,
-    # the denser the fog in the fog range.
-    glFogf(GL_FOG_START, 20.0)
-    glFogf(GL_FOG_END, 60.0)
+    # glEnable(GL_FOG)
+    # # Set the fog color.
+    # glFogfv(GL_FOG_COLOR, (GLfloat * 4)(0.5, 0.69, 1.0, 1))
+    # # Say we have no preference between rendering speed and quality.
+    # glHint(GL_FOG_HINT, GL_DONT_CARE)
+    # # Specify the equation used to compute the blending factor.
+    # glFogi(GL_FOG_MODE, GL_LINEAR)
+    # # How close and far away fog starts and ends. The closer the start and end,
+    # # the denser the fog in the fog range.
+    # glFogf(GL_FOG_START, 20.0)
+    # glFogf(GL_FOG_END, 60.0)
 
 
 if __name__ == '__main__':
-    window = Window(width=800, height=600, caption='Pyglet', resizable=True)
+    window = Window(width=800, height=600, caption='MinecraftClone', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
     setup()

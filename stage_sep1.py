@@ -1,6 +1,6 @@
+from settings import GameSettings
 
 # Size of sectors used to ease block loading.
-SECTOR_SIZE = 16
 
 def cube_vertices(x, y, z, n):
     """ Return the vertices of the cube at position x, y, z with size 2*n.
@@ -21,7 +21,7 @@ def tex_coords(top, bottom, side):
 
     """
 
-    def tex_coord(x, y, n=4):
+    def tex_coord(x, y, n=16):
         """ Return the bounding vertices of the texture square.
 
         """
@@ -71,5 +71,5 @@ def sectorize(position):
 
     """
     x, y, z = normalize(position)
-    x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
+    x, y, z = x // GameSettings.SECTOR_SIZE, y // GameSettings.SECTOR_SIZE, z // GameSettings.SECTOR_SIZE
     return (x, 0, z)
