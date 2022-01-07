@@ -10,7 +10,7 @@ from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
 
-from settings import *
+from settings import GameSettings
 from stage_sep1 import *
 from materials import *
 
@@ -42,7 +42,7 @@ class Model(object):
         self.shown = {}
 
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self._shown = {}
+        self.shown = {}
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -62,7 +62,7 @@ class Model(object):
         y = 0  # initial y height
         for x in range(-n, n + 1, s):
             for z in range(-n, n + 1, s):
-                # create a layer stone an grass everywhere.
+                # create a layer stone a grass everywhere.
                 self.add_block((x, y - 2, z), GRASS, immediate=False)
                 self.add_block((x, y - 3, z), STONE, immediate=False)
                 if x in (-n, n) or z in (-n, n):
@@ -110,10 +110,10 @@ class Model(object):
         dx, dy, dz = vector
         previous = None
         for _ in range(max_distance * m):
-            key = normalize((x, y, z))
-            if key != previous and key in self.world:
-                return key, previous
-            previous = key
+            internal_key = normalize((x, y, z))
+            if internal_key != previous and internal_key in self.world:
+                return internal_key, previous
+            previous = internal_key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
         return None, None
 
@@ -139,7 +139,7 @@ class Model(object):
             The coordinates of the texture squares. Use `tex_coords()` to
             generate.
         immediate : bool
-            Whether or not to draw the block immediately.
+            Whether to draw the block immediately.
 
         """
         if position in self.world:
@@ -159,7 +159,7 @@ class Model(object):
         position : tuple of len 3
             The (x, y, z) position of the block to remove.
         immediate : bool
-            Whether or not to immediately remove block from canvas.
+            Whether to immediately remove block from canvas.
 
         """
         del self.world[position]
@@ -178,15 +178,15 @@ class Model(object):
         """
         x, y, z = position
         for dx, dy, dz in FACES:
-            key = (x + dx, y + dy, z + dz)
-            if key not in self.world:
+            internal_key = (x + dx, y + dy, z + dz)
+            if internal_key not in self.world:
                 continue
-            if self.exposed(key):
-                if key not in self.shown:
-                    self.show_block(key)
+            if self.exposed(internal_key):
+                if internal_key not in self.shown:
+                    self.show_block(internal_key)
             else:
-                if key in self.shown:
-                    self.hide_block(key)
+                if internal_key in self.shown:
+                    self.hide_block(internal_key)
 
     def show_block(self, position, immediate=True):
         """ Show the block at the given `position`. This method assumes the
@@ -197,7 +197,7 @@ class Model(object):
         position : tuple of len 3
             The (x, y, z) position of the block to show.
         immediate : bool
-            Whether or not to show the block immediately.
+            Whether to show the block immediately.
 
         """
         texture = self.world[position]
@@ -224,9 +224,9 @@ class Model(object):
         texture_data = list(texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
-        self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
-                                               ('v3f/static', vertex_data),
-                                               ('t2f/static', texture_data))
+        self.shown[position] = self.batch.add(24, GL_QUADS, self.group,
+                                              ('v3f/static', vertex_data),
+                                              ('t2f/static', texture_data))
 
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
@@ -237,7 +237,7 @@ class Model(object):
         position : tuple of len 3
             The (x, y, z) position of the block to hide.
         immediate : bool
-            Whether or not to immediately remove the block from the canvas.
+            Whether to immediately remove the block from the canvas.
 
         """
         self.shown.pop(position)
@@ -250,7 +250,7 @@ class Model(object):
         """ Private implementation of the 'hide_block()` method.
 
         """
-        self._shown.pop(position).delete()
+        self.shown.pop(position).delete()
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -272,7 +272,7 @@ class Model(object):
 
     def change_sectors(self, before, after):
         """ Move from sector `before` to sector `after`. A sector is a
-        contiguous x, y sub-region of world. Sectors are used to speed up
+        contiguous x, y subregion of world. Sectors are used to speed up
         world rendering.
 
         """
@@ -318,7 +318,7 @@ class Model(object):
 
         """
         start = time.perf_counter()
-        while self.queue and time.perf_counter() - start < 1.0 / TICKS_PER_SEC:
+        while self.queue and time.perf_counter() - start < 1.0 / GameSettings.TICKS_PER_SEC:
             self._dequeue()
 
     def process_entire_queue(self):
@@ -334,7 +334,7 @@ class Window(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
 
-        # Whether or not the window exclusively captures the mouse.
+        # Whether the window exclusively captures the mouse.
         self.exclusive = False
 
         # When flying gravity has no effect and speed is increased.
@@ -347,6 +347,8 @@ class Window(pyglet.window.Window):
         # otherwise. The second element is -1 when moving left, 1 when moving
         # right, and 0 otherwise.
         self.strafe = [0, 0]
+
+        self.run = False
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
@@ -377,8 +379,8 @@ class Window(pyglet.window.Window):
 
         # Convenience list of num keys.
         self.num_keys = [
-            key._1, key._2, key._3, key._4, key._5,
-            key._6, key._7, key._8, key._9, key._0]
+            key.NUM_1, key.NUM_2, key.NUM_3, key.NUM_4, key.NUM_5,
+            key.NUM_6, key.NUM_7, key.NUM_8, key.NUM_9, key.NUM_0]
 
         # Instance of the model that handles the world.
         self.model = Model()
@@ -390,7 +392,7 @@ class Window(pyglet.window.Window):
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
-        pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+        pyglet.clock.schedule_interval(self.update, 1.0 / GameSettings.TICKS_PER_SEC)
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -415,7 +417,7 @@ class Window(pyglet.window.Window):
         dy = math.sin(math.radians(y))
         dx = math.cos(math.radians(x - 90)) * m
         dz = math.sin(math.radians(x - 90)) * m
-        return (dx, dy, dz)
+        return dx, dy, dz
 
     def get_motion_vector(self):
         """ Returns the current motion vector indicating the velocity of the
@@ -454,7 +456,7 @@ class Window(pyglet.window.Window):
             dy = 0.0
             dx = 0.0
             dz = 0.0
-        return (dx, dy, dz)
+        return dx, dy, dz
 
     def update(self, dt):
         """ This method is scheduled to be called repeatedly by the pyglet
@@ -489,7 +491,8 @@ class Window(pyglet.window.Window):
 
         """
         # walking
-        speed = FLYING_SPEED if self.flying else WALKING_SPEED
+        speed = GameSettings.FLYING_SPEED if self.flying else \
+            (GameSettings.WALKING_SPEED if not self.run else GameSettings.RUNNING_SPEED)
         d = dt * speed  # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
@@ -499,12 +502,12 @@ class Window(pyglet.window.Window):
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
-            self.dy -= dt * GRAVITY
-            self.dy = max(self.dy, -TERMINAL_VELOCITY)
+            self.dy -= dt * GameSettings.GRAVITY
+            self.dy = max(self.dy, -GameSettings.TERMINAL_VELOCITY)
             dy += self.dy * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.collide((x + dx, y + dy, z + dz), PLAYER_HEIGHT)
+        x, y, z = self.collide((x + dx, y + dy, z + dz), GameSettings.PLAYER_HEIGHT)
         self.position = (x, y, z)
 
     def collide(self, position, height):
@@ -601,7 +604,7 @@ class Window(pyglet.window.Window):
             m = 0.15
             x, y = self.rotation
             x, y = x + dx * m, y + dy * m
-            y = max(-90, min(90, y))
+            y = max(-90, min(90, int(y)))
             self.rotation = (x, y)
 
     def on_key_press(self, symbol, modifiers):
@@ -616,24 +619,28 @@ class Window(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
-        if symbol == key.W:
-            self.strafe[0] -= 1
-        elif symbol == key.S:
-            self.strafe[0] += 1
-        elif symbol == key.A:
-            self.strafe[1] -= 1
-        elif symbol == key.D:
-            self.strafe[1] += 1
-        elif symbol == key.SPACE:
-            if self.dy == 0:
-                self.dy = JUMP_SPEED
-        elif symbol == key.ESCAPE:
-            self.set_exclusive_mouse(False)
-        elif symbol == key.TAB:
-            self.flying = not self.flying
-        elif symbol in self.num_keys:
-            index = (symbol - self.num_keys[0]) % len(self.inventory)
-            self.block = self.inventory[index]
+        match symbol:
+            case key.W:
+                self.strafe[0] -= 1
+            case key.S:
+                self.strafe[0] += 1
+            case key.A:
+                self.strafe[1] -= 1
+            case key.D:
+                self.strafe[1] += 1
+            case key.LSHIFT:
+                self.run = True
+            case key.SPACE:
+                if self.dy == 0:
+                    self.dy = GameSettings.JUMP_SPEED
+            case key.ESCAPE:
+                self.set_exclusive_mouse(False)
+            case key.TAB:
+                self.flying = not self.flying
+            case _:
+                if symbol in self.num_keys:
+                    index = (symbol - self.num_keys[0]) % len(self.inventory)
+                    self.block = self.inventory[index]
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -739,7 +746,7 @@ class Window(pyglet.window.Window):
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z,
-            len(self.model._shown), len(self.model.world))
+            len(self.model.shown), len(self.model.world))
         self.label.draw()
 
     def draw_reticle(self):
