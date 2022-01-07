@@ -15,7 +15,7 @@ Changes to the original (work in progress):
 + AI players
 + multiplayer
 
-+ ( join official mc servers )
++ clone to official compatibility layer for multiplayer
 
 Why? This is planned as a playground to train future AI projects.
 
